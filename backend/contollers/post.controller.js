@@ -106,17 +106,17 @@ export const likeUnlikePost  = async (req, res) => {
             await User.updateOne({_id: userId }, { $push: { likedPosts: postId}});
             await post.save();
 
-            // try {
-            //     const notification = new Notification({
-            //         from: userId,
-            //         to: post.user,
-            //         type: 'likes'
-            //     });
-            //     await notification.save();
-            // } catch (notificationError) {
-            //     console.log("Error saving notification:", notificationError);
-            //     return res.status(500).json({ error: "Failed to create notification" });
-            // }
+            try {
+                const notification = new Notification({
+                    from: userId,
+                    to: post.user,
+                    type: 'like'
+                });
+                await notification.save();
+            } catch (notificationError) {
+                console.log("Error saving notification:", notificationError);
+                return res.status(500).json({ error: "Failed to create notification" });
+            }
 
             res.status(200).json({messgae:"Post Liked Successfully"});
         }
