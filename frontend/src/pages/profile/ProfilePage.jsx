@@ -15,6 +15,8 @@ import EditProfileModal from "../profile/EditProfileModel";
 
 
 const ProfilePage = () => {
+
+	
 	const [coverImg, setCoverImg] = useState(null);
 	const [profileImg, setProfileImg] = useState(null);
 	const [feedType, setFeedType] = useState("posts");
