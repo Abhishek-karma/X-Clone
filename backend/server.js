@@ -20,8 +20,8 @@ const app  = express();
 app.use(express.json()); // to parse req.body
 const PORT = process.env.PORT || 3000;
 
-
-app.use(express.urlencoded({extended:true})); // to parse data from req.body
+app.use(express.json({ limit: '10mb' })); // Adjust the limit as needed
+app.use(express.urlencoded({ limit: '10mb', extended: true })); // to parse data from req.body
 app.use(cookieParser());
 app.use("/api/auth",authRoutes);
 app.use("/api/users",userRoutes);

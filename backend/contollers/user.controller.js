@@ -103,43 +103,58 @@ export const getSuggetsedUsers = async (req, res) => {
 
 
 export const updateUser = async (req, res) => {
-  const { fullName, email,username,currentPassword,newPassword,bio,link} = req.body;
-  let {profileImg,coverImg} = req.body;
+  const { fullName, email, username, currentPassword, newPassword, bio, link } = req.body;
+  let { profileImg, coverImg } = req.body;
 
   const userId = req.user._id;
 
   try {
     let user = await User.findById(userId);
-    if(!user) return res.status(404).json({message: "User not found"});
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if((!newPassword && currentPassword) || (!currentPassword && newPassword)){
-      return res.status(400).json({error: "Please Provide current password and new password"});
+    // Validate passwords
+    if ((newPassword && !currentPassword) || (!newPassword && currentPassword)) {
+      return res
+        .status(400)
+        .json({ error: "Please provide both current password and new password" });
     }
 
-    if(currentPassword && newPassword){
+    if (currentPassword && newPassword) {
       const isMatch = await bcrypt.compare(currentPassword, user.password);
-      if(!isMatch) return res.status(400).json({error: "Current password is incorrect"});
-      if(newPassword.length < 6){
-        return res.status(400).json({error: " password must at least 6 characters long"});
+      if (!isMatch) return res.status(400).json({ error: "Current password is incorrect" });
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters long" });
       }
 
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(newPassword, salt);
     }
 
-    if(profileImg){
-      if(user.profileImg){
-        await cloudinary.uploader.destroy(user.profileImg.split("/").pop().split(".")[0]);
+    // Update profile image
+    if (profileImg) {
+      if (user.profileImg) {
+        const publicId = user.profileImg.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(publicId).catch((err) =>
+          console.log("Failed to delete old profile image:", err)
+        );
       }
-      const uplodedResponse = await cloudinary.uploader.upload(profileImg)
-      profileImg = uplodedResponse.secure_url;
-    }
-    if(coverImg){
-      await cloudinary.uploader.destroy(user.coverImg.split("/").pop().split(".")[0]);
-      const uplodedResponse = await cloudinary.uploader.upload(coverImg)
-      coverImg = uplodedResponse.secure_url;
+      const uploadedResponse = await cloudinary.uploader.upload(profileImg);
+      profileImg = uploadedResponse.secure_url;
     }
 
+    // Update cover image
+    if (coverImg) {
+      if (user.coverImg) {
+        const publicId = user.coverImg.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(publicId).catch((err) =>
+          console.log("Failed to delete old cover image:", err)
+        );
+      }
+      const uploadedResponse = await cloudinary.uploader.upload(coverImg);
+      coverImg = uploadedResponse.secure_url;
+    }
+
+    // Update user fields
     user.fullName = fullName || user.fullName;
     user.email = email || user.email;
     user.username = username || user.username;
@@ -149,11 +164,10 @@ export const updateUser = async (req, res) => {
     user.coverImg = coverImg || user.coverImg;
 
     user = await user.save();
-    user.password = null;
+    user.password = null; // Do not send password back in the response
     return res.status(200).json(user);
-
   } catch (error) {
-    console.log("Somrthing wrong in update",error.message);
-    res.status(400).json({error: " Somethong went Wrong"});
+    console.error("Something went wrong in update:", error.message);
+    res.status(400).json({ error: "Something went wrong" });
   }
-}
+};
