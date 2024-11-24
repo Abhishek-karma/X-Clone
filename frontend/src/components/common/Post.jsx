@@ -1,4 +1,9 @@
-import { FaRegComment, FaRegHeart, FaRegBookmark, FaTrash } from "react-icons/fa";
+import {
+  FaRegComment,
+  FaRegHeart,
+  FaRegBookmark,
+  FaTrash,
+} from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -17,12 +22,9 @@ const Post = ({ post }) => {
   const isMyPost = authUser._id === post.user._id;
   const formattedDate = formatPostDate(post.createdAt);
 
-
   // Local state for like status and count
   const [isLiked, setIsLiked] = useState(post.likes.includes(authUser._id));
   const [likeCount, setLikeCount] = useState(post.likes.length);
-
-
 
   const { mutate: deletePost, isPending: isDeleting } = useMutation({
     mutationFn: async () => {
@@ -41,13 +43,15 @@ const Post = ({ post }) => {
     onSuccess: () => {
       toast.success("Post deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-    }
+    },
   });
 
   const { mutate: likePost, isPending: isLiking } = useMutation({
     mutationFn: async () => {
       try {
-        const res = await fetch(`/api/posts/like/${post._id}`, { method: "POST" });
+        const res = await fetch(`/api/posts/like/${post._id}`, {
+          method: "POST",
+        });
         const data = await res.json();
         return data;
       } catch (error) {
@@ -61,7 +65,7 @@ const Post = ({ post }) => {
 
       // Update likes in the query cache
       queryClient.setQueryData(["posts"], (oldData = []) =>
-        oldData.map(p => {
+        oldData.map((p) => {
           if (p._id === post._id) {
             return { ...p, likes: updatedLikes };
           }
@@ -71,21 +75,21 @@ const Post = ({ post }) => {
     },
     onError: (error) => {
       toast.error(error.message);
-    }
+    },
   });
 
   const { mutate: commentPost, isPending: isCommenting } = useMutation({
     mutationFn: async () => {
       try {
-        const res = await fetch(`/api/posts/comment/${post._id}`,{
-          method: 'POST',
+        const res = await fetch(`/api/posts/comment/${post._id}`, {
+          method: "POST",
           headers: {
-            "content-Type" : "application/json",
+            "content-Type": "application/json",
           },
-          body: JSON.stringify({ text: comment}),
-        })
+          body: JSON.stringify({ text: comment }),
+        });
         const data = await res.json();
-        if(!res.ok){
+        if (!res.ok) {
           throw new Error(data.error || "Something Went Wrong");
         }
         return data;
@@ -96,13 +100,12 @@ const Post = ({ post }) => {
     onSuccess: () => {
       toast.success("Comment posted successfully");
       setComment("");
-      queryClient.invalidateQueries({queryKey: ["posts"]});
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
     onError: () => {
       throw new Error(error.message);
-    }
-  })
-
+    },
+  });
 
   const handleDeletePost = () => {
     deletePost();
@@ -110,7 +113,7 @@ const Post = ({ post }) => {
 
   const handlePostComment = (e) => {
     e.preventDefault();
-    if(isCommenting) return;
+    if (isCommenting) return;
     commentPost();
   };
 
@@ -121,119 +124,152 @@ const Post = ({ post }) => {
 
   return (
     <>
-      <div className='flex gap-2 items-start p-4 border-b border-gray-700'>
-        <div className='avatar'>
-          <Link to={`/profile/${postOwner.username}`} className='w-8 rounded-full overflow-hidden'>
-            <img src={postOwner.profileImg || "/avatar-placeholder.png"} alt="Profile" />
+      <div className="flex gap-2 items-start p-4 border-b border-gray-700">
+        <div className="avatar">
+          <Link
+            to={`/profile/${postOwner.username}`}
+            className="w-8 rounded-full overflow-hidden"
+          >
+            <img
+              src={postOwner.profileImg || "/avatar-placeholder.png"}
+              alt="Profile"
+            />
           </Link>
         </div>
-        <div className='flex flex-col flex-1'>
-          <div className='flex gap-2 items-center'>
-            <Link to={`/profile/${postOwner.username}`} className='font-bold'>
+        <div className="flex flex-col flex-1">
+          <div className="flex gap-2 items-center">
+            <Link to={`/profile/${postOwner.username}`} className="font-bold">
               {postOwner.fullName}
             </Link>
-            <span className='text-gray-700 flex gap-1 text-sm'>
-              <Link to={`/profile/${postOwner.username}`}>@{postOwner.username}</Link>
+            <span className="text-gray-700 flex gap-1 text-sm">
+              <Link to={`/profile/${postOwner.username}`}>
+                @{postOwner.username}
+              </Link>
               <span>·</span>
               <span>{formattedDate}</span>
             </span>
             {isMyPost && (
-              <span className='flex justify-end flex-1'>
+              <span className="flex justify-end flex-1">
                 {!isDeleting && (
-                  <FaTrash className='cursor-pointer hover:text-red-500' onClick={handleDeletePost} />
+                  <FaTrash
+                    className="cursor-pointer hover:text-red-500"
+                    onClick={handleDeletePost}
+                  />
                 )}
                 {isDeleting && <LoadingSpinner size="sm" />}
               </span>
             )}
           </div>
-          <div className='flex flex-col gap-3 overflow-hidden'>
+          <div className="flex flex-col gap-3 overflow-hidden">
             <span>{post?.text || "No text available"}</span>
             {post?.img && (
               <img
                 src={post.img}
-                className='h-80 object-contain rounded-lg border border-gray-700'
-                alt='Post visual content'
+                className="h-80 object-contain rounded-lg border border-gray-700"
+                alt="Post visual content"
               />
             )}
           </div>
-          <div className='flex justify-between mt-3'>
-            <div className='flex gap-4 items-center w-2/3 justify-between'>
+          <div className="flex justify-between mt-3">
+            <div className="flex gap-4 items-center w-2/3 justify-between">
               <div
-                className='flex gap-1 items-center cursor-pointer group'
+                className="flex gap-1 items-center cursor-pointer group"
                 onClick={() => setCommentModalOpen(true)} // Toggle modal with state
               >
-                <FaRegComment className='w-4 h-4 text-slate-500 group-hover:text-sky-400' />
-                <span className='text-sm text-slate-500 group-hover:text-sky-400'>
+                <FaRegComment className="w-4 h-4 text-slate-500 group-hover:text-sky-400" />
+                <span className="text-sm text-slate-500 group-hover:text-sky-400">
                   {post?.comment?.length || 0}
                 </span>
               </div>
-              <dialog open={isCommentModalOpen} className='modal border-none outline-none'>
-                <div className='modal-box rounded border border-gray-600'>
-                  <h3 className='font-bold text-lg mb-4'>COMMENTS</h3>
-                  <div className='flex flex-col gap-3 max-h-60 overflow-auto'>
+              <dialog
+                open={isCommentModalOpen}
+                className="modal border-none outline-none"
+              >
+                <div className="modal-box rounded border border-gray-600">
+                  <h3 className="font-bold text-lg mb-4">COMMENTS</h3>
+                  <div className="flex flex-col gap-3 max-h-60 overflow-auto">
                     {post?.comment?.length === 0 && (
-                      <p className='text-sm text-slate-500'>
+                      <p className="text-sm text-slate-500">
                         No comments yet 🤔 Be the first one 😉
                       </p>
                     )}
                     {post?.comment?.map((comment) => (
-                      <div key={comment._id} className='flex gap-2 items-start'>
-                        <div className='avatar'>
-                          <div className='w-8 rounded-full'>
-                            <img src={comment?.user?.profileImg || "/avatar-placeholder.png"} alt="Commenter profile" />
+                      <div key={comment._id} className="flex gap-2 items-start">
+                        <div className="avatar">
+                          <div className="w-8 rounded-full">
+                            <img
+                              src={
+                                comment?.user?.profileImg ||
+                                "/avatar-placeholder.png"
+                              }
+                              alt="Commenter profile"
+                            />
                           </div>
                         </div>
-                        <div className='flex flex-col'>
-                          <div className='flex items-center gap-1'>
-                            <span className='font-bold'>{comment?.user?.fullName}</span>
-                            <span className='text-gray-700 text-sm'>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1">
+                            <span className="font-bold">
+                              {comment?.user?.fullName}
+                            </span>
+                            <span className="text-gray-700 text-sm">
                               @{comment?.user?.username}
                             </span>
                           </div>
-                          <div className='text-sm'>{comment?.text}</div>
+                          <div className="text-sm">{comment?.text}</div>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <form className='flex gap-2 items-center mt-4 border-t border-gray-600 pt-2' onSubmit={handlePostComment}>
+                  <form
+                    className="flex gap-2 items-center mt-4 border-t border-gray-600 pt-2"
+                    onSubmit={handlePostComment}
+                  >
                     <textarea
-                      className='textarea w-full p-1 rounded text-md resize-none border focus:outline-none border-gray-800'
-                      placeholder='Add a comment...'
+                      className="textarea w-full p-1 rounded text-md resize-none border focus:outline-none border-gray-800"
+                      placeholder="Add a comment..."
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                     />
-                    <button className='btn btn-primary rounded-full btn-sm text-white px-4'>
-                      {isCommenting ? (
-                        <LoadingSpinner size="md" />
-                      ) : (
-                        "Post"
-                      )}
+                    <button className="btn btn-primary rounded-full btn-sm text-white px-4">
+                      {isCommenting ? <LoadingSpinner size="md" /> : "Post"}
                     </button>
                   </form>
                 </div>
-                <button onClick={() => setCommentModalOpen(false)} className='modal-backdrop outline-none'>
+                <button
+                  onClick={() => setCommentModalOpen(false)}
+                  className="modal-backdrop outline-none"
+                >
                   Close
                 </button>
               </dialog>
-              <div className='flex gap-1 items-center group cursor-pointer'>
-                <BiRepost className='w-6 h-6 text-slate-500 group-hover:text-green-500' />
-                <span className='text-sm text-slate-500 group-hover:text-green-500'>0</span>
+              <div className="flex gap-1 items-center group cursor-pointer">
+                <BiRepost className="w-6 h-6 text-slate-500 group-hover:text-green-500" />
+                <span className="text-sm text-slate-500 group-hover:text-green-500">
+                  0
+                </span>
               </div>
-              <div className='flex gap-1 items-center group cursor-pointer' onClick={handleLikePost}>
+              <div
+                className="flex gap-1 items-center group cursor-pointer"
+                onClick={handleLikePost}
+              >
                 {isLiking && <LoadingSpinner size="sm" />}
                 {!isLiked && !isLiking && (
-                  <FaRegHeart className='w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500' />
+                  <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
                 )}
                 {isLiked && !isLiking && (
-                  <FaRegHeart className='w-4 h-4 cursor-pointer text-pink-500' />
+                  <FaRegHeart className="w-4 h-4 cursor-pointer text-pink-500" />
                 )}
-                <span className={`text-sm ${isLiked ? "text-pink-500" : "text-slate-500"}`}>
+                <span
+                  className={`text-sm ${
+                    isLiked ? "text-pink-500" : "text-slate-500"
+                  }`}
+                >
                   {likeCount}
                 </span>
               </div>
             </div>
-            <div className='flex w-1/3 justify-end gap-2 items-center'>
-              <FaRegBookmark className='w-4 h-4 text-slate-500 cursor-pointer' />
+            <div className="flex w-1/3 justify-end gap-2 items-center">
+              <FaRegBookmark className="w-4 h-4 text-slate-500 cursor-pointer" />
             </div>
           </div>
         </div>
