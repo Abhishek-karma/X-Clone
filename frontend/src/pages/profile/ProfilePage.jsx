@@ -12,11 +12,12 @@ import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 
 import EditProfileModal from "../profile/EditProfileModel";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {  useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/date";
 
 import useFollow from "../../hooks/useFollow";
-import toast from "react-hot-toast";
+
+import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
 
 const ProfilePage = () => {
 
@@ -31,7 +32,6 @@ const ProfilePage = () => {
 	const {username}  = useParams();
 
 	const { follow, isPending } = useFollow();
-	const queryClient = useQueryClient();
 	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 	
 	const {data:user, isLoading,refetch,isReFetching} = useQuery({
@@ -50,41 +50,7 @@ const ProfilePage = () => {
 		},
 	})
 
-	const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
-		mutationFn: async () => {
-			try {
-				const res = await fetch(`/api/users/update`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({ coverImg, profileImg }),
-				});
-				const data = await res.json();
-	
-				if (!res.ok) {
-					throw new Error(data.error || "Something went wrong");
-				}
-				return data;
-			} catch (error) {
-				throw new Error(error.message || "An error occurred");
-			}
-		},
-		onSuccess: async () => {
-			toast.success("Profile updated successfully");
-			try {
-				await Promise.all([
-					queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-					queryClient.invalidateQueries({ queryKey: ["userProfile", username] }),
-				]);
-			} catch (error) {
-				console.error("Error invalidating queries:", error);
-			}
-		},
-		onError: (error) => {
-			toast.error(error.message);
-		},
-	});
+	const {updateProfile,isUpdatingProfile} = useUpdateUserProfile();
 	
 
 	const isMyProfile = authUser._id === user?._id;
@@ -127,10 +93,10 @@ const ProfilePage = () => {
 							</div>
 							{/* COVER IMG */}
 							<div className='relative group/cover'>
-								<img
-									src={coverImg || user?.coverImg || "/cover.png"}
-									className='h-52 w-full object-cover'
-									alt='cover image'
+							<img
+								src={coverImg || user?.coverImage || "/cover.png"}
+								className="h-52 w-full object-cover"
+								alt="cover image"
 								/>
 								{isMyProfile && (
 									<div
@@ -185,7 +151,11 @@ const ProfilePage = () => {
 								{(coverImg || profileImg) && (
 									<button
 										className='btn btn-primary rounded-full btn-sm text-white px-4 ml-2'
-										onClick={() => updateProfile()}
+										onClick={async () => {
+											await updateProfile({coverImg,profileImg})
+											setCoverImg(null)
+											setProfileImg(null)
+										}}
 									>
 										{isUpdatingProfile ? "Updating" : "Update"}
 									</button>
@@ -200,20 +170,20 @@ const ProfilePage = () => {
 								</div>
 
 								<div className='flex gap-2 flex-wrap'>
-									{user?.link && (
-										<div className='flex gap-1 items-center '>
-											<>
-												<FaLink className='w-3 h-3 text-slate-500' />
-												<a
-													href='https://youtube.com/@asaprogrammer_'
-													target='_blank'
-													rel='noreferrer'
-													className='text-sm text-blue-500 hover:underline'
-												>
-												</a>
-											</>
-										</div>
+								{user?.link && (
+									<div className='flex gap-1 items-center'>
+										<FaLink className='w-3 h-3 text-slate-500' />
+										<a
+										href={user.link} // Dynamically use the user's link.
+										target='_blank'
+										rel='noreferrer'
+										className='text-sm text-blue-500 hover:underline'
+										>
+										{user.link} {/* Display the link text */}
+										</a>
+									</div>
 									)}
+
 									<div className='flex gap-2 items-center'>
 										<IoCalendarOutline className='w-4 h-4 text-slate-500' />
 										<span className='text-sm text-slate-500'>

@@ -132,26 +132,33 @@ export const updateUser = async (req, res) => {
 
     // Update profile image
     if (profileImg) {
-      if (user.profileImg) {
-        const publicId = user.profileImg.split("/").pop().split(".")[0];
-        await cloudinary.uploader.destroy(publicId).catch((err) =>
-          console.log("Failed to delete old profile image:", err)
-        );
+      try {
+        if (user.profileImg) {
+          const publicId = user.profileImg.split("/").pop().split(".")[0];
+          await cloudinary.uploader.destroy(publicId);
+        }
+        const uploadedResponse = await cloudinary.uploader.upload(profileImg);
+        profileImg = uploadedResponse.secure_url;
+      } catch (err) {
+        console.error("Failed to update profile image:", err.message);
+        return res.status(500).json({ error: "Failed to update profile image" });
       }
-      const uploadedResponse = await cloudinary.uploader.upload(profileImg);
-      profileImg = uploadedResponse.secure_url;
     }
 
     // Update cover image
     if (coverImg) {
-      if (user.coverImg) {
-        const publicId = user.coverImg.split("/").pop().split(".")[0];
-        await cloudinary.uploader.destroy(publicId).catch((err) =>
-          console.log("Failed to delete old cover image:", err)
-        );
+      try {
+        if (user.coverImage) { // Adjusted to match schema field name
+          const publicId = user.coverImage.split("/").pop().split(".")[0];
+          await cloudinary.uploader.destroy(publicId);
+        }
+        const uploadedResponse = await cloudinary.uploader.upload(coverImg);
+        coverImg = uploadedResponse.secure_url;
+        user.coverImage = coverImg; // Adjusted to match schema field name
+      } catch (err) {
+        console.error("Failed to update cover image:", err.message);
+        return res.status(500).json({ error: "Failed to update cover image" });
       }
-      const uploadedResponse = await cloudinary.uploader.upload(coverImg);
-      coverImg = uploadedResponse.secure_url;
     }
 
     // Update user fields
@@ -161,13 +168,16 @@ export const updateUser = async (req, res) => {
     user.bio = bio || user.bio;
     user.link = link || user.link;
     user.profileImg = profileImg || user.profileImg;
-    user.coverImg = coverImg || user.coverImg;
 
-    user = await user.save();
-    user.password = null; // Do not send password back in the response
-    return res.status(200).json(user);
+    
+    const updatedUser = await user.save();
+
+    return res.status(200).json({
+      ...updatedUser.toObject(),
+      password: null, // Exclude password from response
+    });
   } catch (error) {
-    console.error("Something went wrong in update:", error.message);
-    res.status(400).json({ error: "Something went wrong" });
+    console.error("Something went wrong in updateUser:", error.message);
+    return res.status(400).json({ error: "Something went wrong" });
   }
 };
