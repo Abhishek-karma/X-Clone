@@ -58,11 +58,9 @@ CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 ### 4. Build the App
-bash
 npm run build
 
 ### 5. Start the App
-bash
 npm start
 
 ### 🖥️ Screenshots
